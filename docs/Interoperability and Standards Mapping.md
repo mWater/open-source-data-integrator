@@ -82,7 +82,10 @@ so upstream format diversity never reaches consumers.
 - **Raster tiles** are 256-pixel PNG tiles in the XYZ addressing scheme in
   Web Mercator, the convention consumed by every mainstream web mapping
   client (MapLibre, Leaflet, OpenLayers among them). Tile URLs pin the
-  snapshot id, making them immutable and safely cacheable.
+  snapshot id, making them immutable and safely cacheable. Drawing is
+  clipped to the layer's area-of-interest shape; a query parameter opts out
+  and draws everything the files cover, and a short key of the shape rides
+  in the URL so a reshaped area is never served from cache.
 - **Vector tiles** are Mapbox Vector Tile 2.1 protocol buffers, produced for
   dashboard map queries and for direct map views of destination tables with
   geometry.
@@ -96,7 +99,14 @@ formats in 2.1 and 2.2.
   retain their native CRS, identified by authority code against the
   deployment's spatial reference registry; map rendering warps to Web
   Mercator (EPSG:3857) at tile time. Areas of interest are geographic
-  bounding boxes in WGS 84, ordered west, south, east, north.
+  bounding boxes in WGS 84, ordered west, south, east, north, optionally
+  naming ISO 3166-1 alpha-3 countries.
+- **Boundaries.** An area naming countries is also resolved to a land-only
+  shape from a bundled boundary dataset (Natural Earth 1:10m Admin 0
+  countries with lakes removed, public domain), cut to the box, with the
+  dataset and version recorded as provenance on every statistic taken over
+  it. Deployments needing an official national outline can substitute one
+  at the same point; the statistics and tile interfaces do not change.
 - **Time.** All timestamps are ISO 8601 in UTC, including raster snapshot
   observation times (instants or explicit ranges) and run records. Cron
   triggers evaluate in UTC.
@@ -144,9 +154,13 @@ Dashboards, the assistant, and raster-vector statistics execute standard SQL
 with OGC Simple Features / SQL-MM spatial functions under a read-only role
 scoped to destination data and the catalog. Promoted raster snapshots are
 registered as out-of-database rasters in this surface, so zonal statistics
-and point sampling run in SQL without pixels entering the database. For
-national analysts, this is a familiar, standard interface: any analyst or
-BI tool fluent in spatial SQL can be granted the same read-only role.
+and point sampling run in SQL without pixels entering the database. The
+area-of-interest shape is a table of this surface, and a function returns
+area-weighted statistics of any layer over it (mean, share meeting a
+condition, coverage by valid data, boundary provenance), the standard way
+to answer "what share of the country" questions. For national analysts,
+this is a familiar, standard interface: any analyst or BI tool fluent in
+spatial SQL can be granted the same read-only role.
 
 ## 5. Ingestion-side protocols
 

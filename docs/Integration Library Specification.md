@@ -164,13 +164,16 @@ can only be run manually.
 | Field | Type | Meaning |
 |---|---|---|
 | `bbox` | `[west, south, east, north]` | Geographic bounding box in WGS 84 (EPSG:4326) decimal degrees; `west > east` crosses the antimeridian |
-| `countries` | string[] | ISO 3166-1 alpha-3 codes covered by the box, a hint for sources keyed by country rather than extent |
+| `countries` | string[] | ISO 3166-1 alpha-3 codes covered by the box: a hint for sources keyed by country rather than extent, and the countries whose land outlines the platform clips statistics and map drawing to |
 
 `aoi` is tri-state. An object clips ingestion and input extracts to the box.
 An explicit `null` means the source's full extent. An absent field inherits
 the deployment's default area of interest at run time. The platform resolves
 this before launch: the job's copy of the definition carries either a
-concrete `aoi` or no `aoi` field at all (full extent), never `null`.
+concrete `aoi` or no `aoi` field at all (full extent), never `null`. The box
+bounds what is downloaded and stored; when `countries` is set, the platform
+also derives a land-only shape from it for statistics and map clipping, so
+stored pixels along the coast and the border are kept, not cut.
 
 ### 2.7 Inputs
 

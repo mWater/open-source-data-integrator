@@ -151,7 +151,11 @@ An integration is described entirely by one machine-readable definition:
   encrypted), and importing a definition prompts for them.
 - `aoi` is the area of interest. It is tri-state: an explicit bounding box
   clips ingestion to it, an explicit null means the source's full extent, and
-  omission inherits the deployment's default AOI at run time.
+  omission inherits the deployment's default AOI at run time. The box is a
+  download window. An area that names countries is also resolved to a
+  boundary shape (the countries' land outlines from a bundled public-domain
+  boundary dataset, inland water removed, cut to the box), and that shape is
+  what statistics "of the country" and map drawing clip to.
 - `inputs` references catalog layers and tables that this integration
   consumes, which is how derived analytics (drought indices, exposure
   statistics) are expressed as ordinary integrations.
@@ -262,6 +266,12 @@ so nothing enters the store unharmonized.
   (WGS 84). Rasters keep their native grid and CRS to avoid resampling loss
   at ingest; the catalog records the CRS per snapshot, and map tiles are
   warped to the web projection at render time.
+- **Boundaries.** Pixels of a clipped raster extend past the coastline and
+  the border, so the deployment's area of interest is materialized as a
+  land-only shape with recorded provenance (dataset and version). Area
+  statistics weight coarse pixels by the part inside the shape, fine pixels
+  by their area at their latitude, and report the share of the shape covered
+  by valid data; map tiles are cut to it.
 - **Time.** All timestamps are UTC. Raster snapshots carry an instant or an
   explicit time range; time-step normalization is declared in the
   definition.
@@ -295,6 +305,11 @@ snapshots, and bands with footprints, timestamps, units, and rendering hints.
   vector features and compute zonal statistics without pixels entering the
   database. This registration is best-effort: every other function works
   without it.
+- The area-of-interest shape is a row of the same surface, with a function
+  returning area-weighted statistics of any layer over it (mean, share
+  meeting a condition, coverage, cell size, snapshot used, boundary
+  provenance), so agents and analysts never approximate a country by its
+  envelope.
 - Raw source files are working data with short, per-integration retention;
   the store holds harmonized products, not archives of upstream downloads.
 
@@ -323,7 +338,9 @@ flowchart LR
   described by a machine-readable specification served by the platform.
   Fully functional with no AI configured.
 - **Map tiles.** Rendered raster tiles with snapshot-pinned, long-cacheable
-  URLs, styled by the rendering declarations in the definition.
+  URLs, styled by the rendering declarations in the definition and clipped
+  to the owning integration's area-of-interest shape (a query parameter
+  draws the full extent instead).
 - **Dashboard.** A web application covering the operator loop: data catalog,
   integration management, run history with logs and lineage, data preview,
   map views with time navigation, user management, and deployment settings.
