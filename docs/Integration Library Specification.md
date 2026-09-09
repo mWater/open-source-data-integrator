@@ -28,7 +28,7 @@ library/
 
 - Each integration directory holds exactly one `definition.json` and exactly
   one code file. The code file's extension MUST match the definition's
-  `runtime` (`code.py` for `python3.12`, `code.mjs` for `node22`). On
+  `runtime` (`code.py` for `python`, `code.mjs` for `node`). On
   install, the file's contents become the definition's `code` field, which
   is therefore left empty (`""`) in the library copy.
 - Directory names are the integration and skill ids and MUST match the
@@ -58,7 +58,7 @@ and imported into another.
     "documentation": "https://data.worldpop.org/..."
   },
   "trigger": { "cron": "0 6 1 * *" },
-  "runtime": "python3.12",
+  "runtime": "python",
   "limits": { "cpus": 2, "memoryMb": 4096, "timeoutMs": 3600000 },
   "destinations": [
     {
@@ -125,7 +125,7 @@ two-letter ISO 639-1 codes).
 | `secrets` | string[] | no | Names of credentials the code reads; values are never in the definition |
 | `aoi` | object (2.6), `null`, or absent | no | Area of interest, tri-state |
 | `inputs` | map of id to input reference (2.7) | no | Platform data the run consumes |
-| `runtime` | `"node22"` or `"python3.12"` | yes | Runtime image the code executes in |
+| `runtime` | `"node"` or `"python"` | yes | Runtime image the code executes in |
 | `limits` | object (2.8) | no | Per-run resource limits |
 | `destinations` | array (2.9) | yes | Tables and raster layers the integration writes |
 | `validation` | object (2.10) | no | Data quality rules evaluated on each run |
@@ -198,7 +198,7 @@ input MUST NOT reference one of the definition's own destinations.
 | `tableId` | identifier | Table to extract from |
 | `columns` | identifier[] | Columns to include; absent means all |
 | `where` | filter (below) | Row filter applied before extraction |
-| `format` | `"gpkg"`, `"json"`, or `"csv"` | Extract file format; defaults to `gpkg` for `python3.12` and `json` for `node22` |
+| `format` | `"gpkg"`, `"json"`, or `"csv"` | Extract file format; defaults to `gpkg` for `python` and `json` for `node` |
 
 A filter is an array of clauses combined with AND, each
 `{ "column": id, "op": "=" | "!=" | ">" | ">=" | "<" | "<=" | "in", "value": any }`
@@ -319,7 +319,8 @@ imports.
   "secrets": { "name": "value" },
   "previousState": { ... } | null,
   "webhookData": [ ...pending events, oldest first... ] | null,
-  "params": { ... }
+  "params": { ... },
+  "catalog": { "<layerId>": { "snapshots": [ { "timestamp": "…", "timestampEnd": "…", "sources": 1 } ] } }
 }
 ```
 
@@ -332,7 +333,15 @@ imports.
 - `webhookData` is every buffered event since the last run, and absent or
   null for runs not triggered by webhooks.
 - `params` are free-form parameters supplied by the trigger, an empty
-  object for scheduled runs.
+  object for scheduled runs. A manual run may set `params.force` to ask for
+  work the code would otherwise skip.
+- `catalog` lists, for each raster destination the definition declares, the
+  snapshots already promoted for that layer, ascending by `timestamp`, with
+  `timestampEnd` for periods and the number of `sources` (files; 0 is a
+  published empty snapshot). Whether a period still needs producing is the
+  code's decision: it compares what the source offers with what `catalog`
+  holds, honours `params.force`, and returns no artifact for a period that
+  needs no update. The platform never skips a run on the code's behalf.
 
 ### 3.2 Entrypoint
 
@@ -341,8 +350,8 @@ integration's entrypoint with it:
 
 | Runtime | Entrypoint | Context fields |
 |---|---|---|
-| `python3.12` | module-level `def run(ctx)` | `ctx.definition`, `ctx.secrets`, `ctx.previous_state`, `ctx.webhook_data`, `ctx.params`, `ctx.in_dir`, `ctx.work_dir`, `ctx.out_dir` |
-| `node22` | default-exported `async function run(ctx)` | `ctx.definition`, `ctx.secrets`, `ctx.previousState`, `ctx.webhookData`, `ctx.params`, `ctx.inDir`, `ctx.workDir`, `ctx.outDir` |
+| `python` | module-level `def run(ctx)` | `ctx.definition`, `ctx.secrets`, `ctx.previous_state`, `ctx.webhook_data`, `ctx.params`, `ctx.catalog`, `ctx.in_dir`, `ctx.work_dir`, `ctx.out_dir` |
+| `node` | default-exported `async function run(ctx)` | `ctx.definition`, `ctx.secrets`, `ctx.previousState`, `ctx.webhookData`, `ctx.params`, `ctx.catalog`, `ctx.inDir`, `ctx.workDir`, `ctx.outDir` |
 
 The entrypoint returns (or resolves to) a run result (3.5). A nonzero exit
 or an uncaught exception fails the run, and the tail of standard error
@@ -437,8 +446,8 @@ lineage, and validation flags on the run.
 
 ### 3.6 Runtime images
 
-Two runtime images are specified: `node22`, a JavaScript runtime, and
-`python3.12`, which additionally carries an open geospatial stack (raster,
+Two runtime images are specified: `node`, a JavaScript runtime, and
+`python`, which additionally carries an open geospatial stack (raster,
 array, and vector libraries, and the command-line raster tools the library's
 integrations rely on). An implementation MUST provide both and MAY add
 further runtimes as additional images implementing the same harness

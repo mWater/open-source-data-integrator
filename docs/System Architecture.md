@@ -483,7 +483,7 @@ normative: it records one set of choices that satisfies the contracts.
 | Relational database | PostgreSQL with PostGIS |
 | Raster store | Local filesystem (S3-compatible object storage optional); cloud-optimized GeoTIFF |
 | Sandbox | podman (rootless) with gVisor syscall isolation; nftables egress policy |
-| Runtime images | `node22` and `python3.12` OCI images with the geospatial stack in Python |
+| Runtime images | `node` and `python` OCI images with the geospatial stack in Python |
 | Job queue | Database-backed queue with partial unique indexes for serialization |
 | Query API | REST with OpenAPI description; JSON, CSV, GeoJSON |
 | Tiles | XYZ raster tiles rendered from COGs via GDAL |
