@@ -1,6 +1,6 @@
-# mWater Pathfinder
+# Open Source Data Integrator Platform
 
-Pathfinder is an open-source, self-hosted platform that ingests multi-source
+The Data Integrator is an open-source, self-hosted platform that ingests multi-source
 water and climate data (satellite and gridded products, in-situ sensors,
 national databases), harmonizes it into standard formats, and exposes it
 through a documented query API, a dashboard, and an optional AI assistant.
@@ -9,7 +9,7 @@ pipelines themselves.
 
 It is developed by [mWater](https://www.mwater.co) for the UNICEF WASH
 Innovation Hub as the reference implementation of the **Open Source Data
-Integrator Platform**, with initial deployments in Angola and Madagascar.
+Integrator Platform** architecture, with initial deployments in Angola and Madagascar.
 
 ## Architecture documents
 
